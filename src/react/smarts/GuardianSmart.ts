@@ -1,6 +1,6 @@
 import * as React from "react";
 import { EventManager, Inject, Event } from "@kaviar/core";
-import { gql } from "@apollo/client";
+import { ApolloError, gql } from "@apollo/client";
 import { Smart } from "@kaviar/smart";
 import { LOCAL_STORAGE_TOKEN_KEY } from "../../constants";
 import { ApolloClient } from "../../graphql/ApolloClient";
@@ -112,17 +112,33 @@ export class GuardianSmart<
           });
         })
         .catch((err) => {
-          console.error(
-            `[Authentication] There was an error fetching the user: ${err.toString()}`
-          );
-          // this.storeToken(null);
-          this.updateState({
-            // hasInvalidToken: true,
-            fetchingUserData: false,
-            // isLoggedIn: false,
-          });
+          return this.handleUserRetrievalError(err);
         });
     }
+  }
+
+  protected handleUserRetrievalError(err) {
+    console.error(
+      `[Authentication] There was an error fetching the user: ${err.toString()}`
+    );
+
+    // I am very sorry it is like this, we should improve the erroring mechanism somehow
+    const errors = err.networkError?.result?.errors;
+    if (errors && errors[0] && errors[0].code) {
+      if (["SESSION_TOKEN_EXPIRED", "INVALID_TOKEN"].includes(errors[0].code)) {
+        console.warn("[Authentication] Token was invalid or expired");
+        // We need to log him out
+        this.storeToken(null);
+        this.updateState({
+          hasInvalidToken: true,
+          fetchingUserData: false,
+          isLoggedIn: false,
+        });
+      }
+    }
+
+    // There might be some other error, like the API is down, no reason to log him out
+    this.updateState({ fetchingUserData: false });
   }
 
   protected retrieveUser(): Promise<TUserType> {
