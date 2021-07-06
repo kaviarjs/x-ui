@@ -436,7 +436,11 @@ Integration with React is seamless and painless:
 import { useData, useLiveData, useDataOne, useLiveDataOne } from "@kaviar/x-ui";
 
 function PostsList() {
-  const { data: posts, isLoading, error } = useData(
+  const {
+    data: posts,
+    isLoading,
+    error,
+  } = useData(
     PostsCollection,
     {
       // Query options
@@ -459,11 +463,11 @@ function PostsList() {
 If you are expecting a single post, we also have an easy find by \_id solution:
 
 ```tsx
-const { data: post, isLoading, error } = useDataOne(
-  PostsCollection,
-  new ObjectId(props.id),
-  body
-);
+const {
+  data: post,
+  isLoading,
+  error,
+} = useDataOne(PostsCollection, new ObjectId(props.id), body);
 ```
 
 ## Live Data
@@ -474,7 +478,11 @@ If you want to use the smart live data, just swap `useData()` with `useLiveData(
 import { useLiveData } from "@kaviar/x-ui";
 
 const LiveDataPage = () => {
-  const { data: posts, isLoading, error } = useLiveData(
+  const {
+    data: posts,
+    isLoading,
+    error,
+  } = useLiveData(
     PostsCollection,
     {
       filters: {},
@@ -484,11 +492,11 @@ const LiveDataPage = () => {
   );
 
   // or single element
-  const { data: post, isLoading, error } = useLiveDataOne(
-    PostsCollection,
-    new ObjectId(id),
-    requestBody
-  );
+  const {
+    data: post,
+    isLoading,
+    error,
+  } = useLiveDataOne(PostsCollection, new ObjectId(id), requestBody);
 };
 ```
 
@@ -730,6 +738,118 @@ However if you want to extend the interface of `Guardian`, meaning you add other
 const appGuardian = (): AppGuardianSmart => {
   return useGuardian() as AppGuardianSmart;
 };
+```
+
+## Sessions
+
+`useUISession` is a hook that allows for handling sessions easily. You can and add custom handlers on field change and persist the data to local storage.
+
+The interface that defines the store is the following:
+
+```ts
+interface IUISessionStore {
+  lastAuthenticationDate: Date;
+}
+```
+
+In order to modify the interface and benefit of autocompletion, you have to extend it:
+
+```ts title="declarations.ts";
+import "@kaviar/x-ui";
+
+declare module "@kaviar/x-ui" {
+  export interface IUISessionStore {
+    csrfToken: string;
+  }
+}
+```
+
+---
+
+The hook provides the following methods:
+
+```tsx
+get(fieldName);
+/* returns the value of a field. */
+
+async set(fieldName, value, options);
+/* sets a field to a value, e.g. set("lastAuthenticationDate", new Date());
+if you want to wait for the handlers to run, you must use await.
+you will want to use `options` in order to persist data to localStorage. */
+
+onSet(fieldName, handler);
+/* adds a handler that is called on set(fieldName, value);
+the handler is an async function of type IUISessionHandler
+e.g. (event: Event<IUISessionStateChangeEvent>) => Promise<void> */
+
+onSetRemove(handler);
+/* removes a handler that is attached to some field. */
+```
+
+Simple example:
+
+```tsx
+import { useUISession, useGuardian, IUISessionHandler } from "@kaviar/x-ui";
+
+const authenticationDateHandler: IUISessionHandler = async (event) => {
+  const {
+    data: { value, previousValue },
+  } = event;
+
+  // do something!
+  console.log({ value, previousValue });
+};
+
+function Component() {
+  const session = useUISession();
+  const guardian = useGuardian();
+
+  const lastAuthenticationDate = session.get("lastAuthenticationDate");
+
+  useEffect(() => {
+    session.onSet("lastAuthenticationDate", authenticationDateHandler);
+  }, []);
+
+  const onSubmit = () => {
+    guardian.login(username, password).then(() => {
+      session.set("lastAuthenticationDate", new Date(), {
+        persist: true,
+      });
+    });
+  };
+
+  return (
+    <div>
+      {/* ...login form */}
+      Last authentication: {lastAuthenticationDate?.toDateString()}
+    </div>
+  );
+}
+```
+
+Note:
+
+For handlers, you'll want to declare them outside of a React component,
+such that they won't change their memory address. Otherwise, you won't be able to remove them,
+since onSetRemove identifies a handler by comparing functions, which is done on addresses.
+
+---
+
+When initialising `XUIBundle()`, you can pass session defaults:
+
+```ts title="kernel.ts";
+  export const kernel = new Kernel({
+    ...,
+    bundles: [
+      ...,
+      new XUIBundle({
+        session: {
+          csrfToken: null,
+          localStorageKey: "SESSION_LOCAL_STORAGE_KEY"
+        }
+      })
+    ]
+  })
 ```
 
 ## Events

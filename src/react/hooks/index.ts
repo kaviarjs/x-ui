@@ -15,6 +15,7 @@ import {
 } from "./useSubscription";
 import { GuardianSmart } from "../smarts/GuardianSmart";
 import { useSmart } from "../smart";
+import { UISession } from "../services/UISession.service";
 
 // START OF EXPORTS
 export { useUIComponents } from "./useUIComponents";
@@ -55,4 +56,8 @@ export const useListener = (
 
 export const useGuardian = (): GuardianSmart => {
   return useSmart(GuardianSmart);
+};
+
+export const useUISession = (): UISession => {
+  return use(UISession);
 };
