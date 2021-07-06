@@ -466,80 +466,7 @@ const { data: post, isLoading, error } = useDataOne(
 );
 ```
 
-## Live Data
-
-If you want to use the smart live data, just swap `useData()` with `useLiveData()` and it will magically work, your data will be listening to changes.
-
-```ts
-import { useLiveData } from "@kaviar/x-ui";
-
-const LiveDataPage = () => {
-  const { data: posts, isLoading, error } = useLiveData(
-    PostsCollection,
-    {
-      filters: {},
-      options: {},
-    },
-    requestBody
-  );
-
-  // or single element
-  const { data: post, isLoading, error } = useLiveDataOne(
-    PostsCollection,
-    new ObjectId(id),
-    requestBody
-  );
-};
-```
-
-You can also hook into the events, via the 4th argument, options:
-
-```ts
-useLiveData(collectionClass, options, body, {
-  onReady() {
-    // Do something when all data has been initially loaded
-  },
-  onError(error: Error) {
-    // Handle if subscription throws out an error
-  },
-  onChanged(document, changeSet, previousDocument) {
-    // Do something when something about the subscription changes
-  },
-  onRemoved(document) {
-    // Do something when document is removed
-  },
-  onAdded(document) {
-    // Do something when document is added
-  },
-});
-```
-
-:::caution
-When using live data and relations, it is by design to not have reactivity at nested levels. For example if someone updates the comments' text it won't trigger a reactive change. Instead you will have to create separate component that subscribes to that comment via `useLiveData()`.
-:::
-
-## Integration with Smart
-
-Smart is a very small library that does state management by using `useState()` from React and `useContext()` allowing you to easily split logic out of your components.
-
-The difference here is that `Smart` from this package, allows you to work with the D.I. container:
-
-```ts
-import { Smart, useSmart, newSmart } from "@kaviar/x-ui";
-
-class MySmart extends Smart<any, any> {
-  @Inject()
-  eventManager: EventManager;
-}
-
-function Component() {
-  const [mySmart, Provider] = newSmart(MySmart);
-
-  // mySmart has been instantiated by the container, seemlessly
-}
-```
-
-## Lists
+### Lists
 
 We have created a `Smart` that allows you to easily work with lists:
 
@@ -612,6 +539,79 @@ api.setFilters({
 api.updateSort({
   title: 1, // After let's say he clicks a table
 });
+```
+
+## Live Data
+
+If you want to use the smart live data, just swap `useData()` with `useLiveData()` and it will magically work, your data will be listening to changes.
+
+```ts
+import { useLiveData } from "@kaviar/x-ui";
+
+const LiveDataPage = () => {
+  const { data: posts, isLoading, error } = useLiveData(
+    PostsCollection,
+    {
+      filters: {},
+      options: {},
+    },
+    requestBody
+  );
+
+  // or single element
+  const { data: post, isLoading, error } = useLiveDataOne(
+    PostsCollection,
+    new ObjectId(id),
+    requestBody
+  );
+};
+```
+
+You can also hook into the events, via the 4th argument, options:
+
+```ts
+useLiveData(collectionClass, options, body, {
+  onReady() {
+    // Do something when all data has been initially loaded
+  },
+  onError(error: Error) {
+    // Handle if subscription throws out an error
+  },
+  onChanged(document, changeSet, previousDocument) {
+    // Do something when something about the subscription changes
+  },
+  onRemoved(document) {
+    // Do something when document is removed
+  },
+  onAdded(document) {
+    // Do something when document is added
+  },
+});
+```
+
+:::caution
+When using live data and relations, it is by design to not have reactivity at nested levels. For example if someone updates the comments' text it won't trigger a reactive change. Instead you will have to create separate component that subscribes to that comment via `useLiveData()`.
+:::
+
+## Integration with Smart
+
+Smart is a very small library which allowes you to integrate logic and state together in a separated class.
+
+The difference here is that `Smart` from this package, allows you to work with the D.I. container:
+
+```ts
+import { Smart, useSmart, newSmart } from "@kaviar/x-ui";
+
+class MySmart extends Smart<any, any> {
+  @Inject()
+  eventManager: EventManager;
+}
+
+function Component() {
+  const [mySmart, Provider] = newSmart(MySmart);
+
+  // mySmart has been instantiated by the container, seemlessly
+}
 ```
 
 ## Guardian
@@ -850,18 +850,19 @@ since onSetRemove identifies a handler by comparing functions, which is done on 
 When initialising `XUIBundle()`, you can pass session defaults:
 
 ```ts title="kernel.ts";
-  export const kernel = new Kernel({
-    ...,
-    bundles: [
-      ...,
-      new XUIBundle({
-        session: {
+export const kernel = new Kernel({
+  bundles: [
+    // other bundles
+    new XUIBundle({
+      session: {
+        defaults: {
           csrfToken: null,
-          localStorageKey: "SESSION_LOCAL_STORAGE_KEY"
-        }
-      })
-    ]
-  })
+        },
+        localStorageKey: "SESSION_LOCAL_STORAGE_KEY",
+      },
+    }),
+  ],
+});
 ```
 
 ## UI Components
