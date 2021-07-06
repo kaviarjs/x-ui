@@ -1,5 +1,13 @@
 # Change Log
 
+## 1.6.0
+
+- Added UI Peristable Sessions with Type-Safety
+
+## 1.5.0
+
+- Perfected Smarts, Routers and made them more efficient
+
 ## 1.4.5
 
 - Added useLiveData() with the same argument signature as useData() (same for One)
