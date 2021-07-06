@@ -2,13 +2,9 @@ import { act, renderHook, RenderResult } from "@testing-library/react-hooks";
 import * as React from "react";
 import { ContainerContext } from "..";
 import { useUISession } from "../react/hooks";
-import {
-  IUISessionHandler,
-  IUISessionStore,
-  UISession,
-} from "../react/services/UISession.service";
+import { UISessionEventChangeHandler, IUISessionStore, UISession } from "../";
 import { getLocalStorageState } from "../react/services/utils/UISession.utils";
-import { container, sessionDefaults } from "./ecosystem";
+import { container, sessionsConfig } from "./ecosystem";
 
 const containerContextProvider = ({ children }) => {
   return (
@@ -39,9 +35,9 @@ describe("useUISession", () => {
   test("sessionDefaults", () => {
     const sessionHook = getSessionHook();
 
-    const { localStorageKey: _, ...defaultState } = sessionDefaults;
+    const { localStorageKey, defaults } = sessionsConfig;
 
-    expect(sessionHook.current.state).toStrictEqual(defaultState);
+    expect(sessionHook.current.state).toStrictEqual(defaults);
   });
 
   test("set and get", async () => {
@@ -69,7 +65,7 @@ describe("useUISession", () => {
 
     let handlerIsCalled = false;
 
-    const handler: IUISessionHandler = async () => {
+    const handler: UISessionEventChangeHandler = async () => {
       handlerIsCalled = !handlerIsCalled;
     };
 
@@ -113,7 +109,7 @@ describe("useUISession", () => {
     );
 
     const localStorageState = getLocalStorageState(
-      sessionDefaults.localStorageKey
+      sessionsConfig.localStorageKey
     );
 
     expect(localStorageState.lastAuthenticationDate).toEqual(
@@ -126,7 +122,7 @@ describe("useUISession", () => {
 
     let handlerIsCalled = false;
 
-    const handler: IUISessionHandler = async () => {
+    const handler: UISessionEventChangeHandler = async () => {
       handlerIsCalled = !handlerIsCalled;
     };
 
@@ -146,7 +142,7 @@ describe("useUISession", () => {
     );
 
     const localStorageState = getLocalStorageState(
-      sessionDefaults.localStorageKey
+      sessionsConfig.localStorageKey
     );
 
     expect(handlerIsCalled).toStrictEqual(true);
@@ -159,19 +155,19 @@ describe("useUISession", () => {
     const sessionHook = getSessionHook();
 
     const localStorageState = getLocalStorageState(
-      sessionDefaults.localStorageKey
+      sessionsConfig.localStorageKey
     );
 
     const localStorageStateKeys = Object.keys(localStorageState);
 
-    const { localStorageKey: _, ...defaultState } = sessionDefaults;
+    const { localStorageKey, defaults } = sessionsConfig;
 
-    for (const key of Object.keys(defaultState)) {
+    for (const key of Object.keys(defaults)) {
       const value = sessionHook.current.state[key];
       if (localStorageStateKeys.includes(key)) {
         expect(value).toStrictEqual(localStorageState[key]);
       } else {
-        expect(value).toStrictEqual(sessionDefaults[key]);
+        expect(value).toStrictEqual(sessionsConfig[key]);
       }
     }
   });
@@ -187,7 +183,7 @@ describe("useUISession", () => {
         await sessionHook.current.set("lastAuthenticationDate", previousValue)
     );
 
-    const handler: IUISessionHandler = async (e) => {
+    const handler: UISessionEventChangeHandler = async (e) => {
       expect(e.data.previousValue).toBe(previousValue);
       expect(e.data.value).toBe(newValue);
     };

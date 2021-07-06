@@ -33,7 +33,7 @@
   },
   "peerDependencies": {
     "@apollo/client": "^3.2.1",
-    "@kaviar/core": "^1.1.1",
+    "@kaviar/core": "^1.2.3",
     "@kaviar/ejson": "^1.2.3",
     "react": "^17.0.1",
     "react-dom": "^17.0.1",
@@ -41,7 +41,7 @@
   },
   "devDependencies": {
     "@apollo/client": "^3.2.1",
-    "@kaviar/core": "^1.1.1",
+    "@kaviar/core": "^1.2.3",
     "@kaviar/ejson": "^1.2.3",
     "@kaviar/smart": "^1.2.4",
     "@testing-library/react-hooks": "^7.0.0",

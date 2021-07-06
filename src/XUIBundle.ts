@@ -33,8 +33,8 @@ export class XUIBundle extends Bundle<IXUIBundleConfig> {
   };
 
   async hook() {
-    const eventManager = this.get<EventManager>(EventManager);
-    const router = this.get<XRouter>(XRouter);
+    const eventManager = this.container.get(EventManager);
+    const router = this.container.get(XRouter);
 
     // After the kernel has passed through all intialisation of all bundles and all routes have been added
     // It's time to hook into them and have extensions for configuration

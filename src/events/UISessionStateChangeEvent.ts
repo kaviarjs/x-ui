@@ -1,10 +1,12 @@
 import { Event } from "@kaviar/core";
 import { IUISessionStore } from "../react/services/UISession.service";
 
-export interface IUISessionStateChangeEvent {
+export type UISessionStateChangeEventProps = {
   fieldName: keyof IUISessionStore;
   previousValue: IUISessionStore[keyof IUISessionStore];
   value: IUISessionStore[keyof IUISessionStore];
-}
+};
 
-export class UISessionStateChangeEvent extends Event<IUISessionStateChangeEvent> {}
+export class UISessionStateChangeEvent extends Event<
+  UISessionStateChangeEventProps
+> {}

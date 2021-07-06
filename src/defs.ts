@@ -1,15 +1,10 @@
 import * as React from "react";
 import { RouteProps } from "react-router-dom";
-import {
-  ApolloCache,
-  ApolloClient,
-  ApolloClientOptions,
-} from "@apollo/client/core";
+import { ApolloClientOptions } from "@apollo/client/core";
 import { GuardianSmart } from "./react";
 import { Constructor } from "@kaviar/core";
-import { INewSmartOptions } from "@kaviar/smart";
 import { IComponents } from "./react";
-import { IUISessionDefaults } from "./react/services/UISession.service";
+import { IUISessionStore } from "./react/services/UISession.service";
 
 export interface IXUIBundleConfig {
   graphql: Partial<ApolloClientOptions<any>>;
@@ -18,7 +13,10 @@ export interface IXUIBundleConfig {
   react: {
     components: IComponents;
   };
-  session: IUISessionDefaults;
+  session: {
+    localStorageKey?: string;
+    defaults?: IUISessionStore;
+  };
 }
 
 export interface IRoute<T = IRouteParams, Q = IRouteParams> extends RouteProps {

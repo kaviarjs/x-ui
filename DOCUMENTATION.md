@@ -436,11 +436,7 @@ Integration with React is seamless and painless:
 import { useData, useLiveData, useDataOne, useLiveDataOne } from "@kaviar/x-ui";
 
 function PostsList() {
-  const {
-    data: posts,
-    isLoading,
-    error,
-  } = useData(
+  const { data: posts, isLoading, error } = useData(
     PostsCollection,
     {
       // Query options
@@ -463,11 +459,11 @@ function PostsList() {
 If you are expecting a single post, we also have an easy find by \_id solution:
 
 ```tsx
-const {
-  data: post,
-  isLoading,
-  error,
-} = useDataOne(PostsCollection, new ObjectId(props.id), body);
+const { data: post, isLoading, error } = useDataOne(
+  PostsCollection,
+  new ObjectId(props.id),
+  body
+);
 ```
 
 ## Live Data
@@ -478,11 +474,7 @@ If you want to use the smart live data, just swap `useData()` with `useLiveData(
 import { useLiveData } from "@kaviar/x-ui";
 
 const LiveDataPage = () => {
-  const {
-    data: posts,
-    isLoading,
-    error,
-  } = useLiveData(
+  const { data: posts, isLoading, error } = useLiveData(
     PostsCollection,
     {
       filters: {},
@@ -492,11 +484,11 @@ const LiveDataPage = () => {
   );
 
   // or single element
-  const {
-    data: post,
-    isLoading,
-    error,
-  } = useLiveDataOne(PostsCollection, new ObjectId(id), requestBody);
+  const { data: post, isLoading, error } = useLiveDataOne(
+    PostsCollection,
+    new ObjectId(id),
+    requestBody
+  );
 };
 ```
 
@@ -740,17 +732,27 @@ const appGuardian = (): AppGuardianSmart => {
 };
 ```
 
+## Events
+
+You can use the classic `EventManager` to emit events, but if you want to have a component listen to events during its lifespan (until it gets unmounted), you can use the hook: `useListener`.
+
+```tsx title="Emitting Events"
+import { useListener, useEventManager } from "@kaviar/x-ui";
+
+const eventManager = useEventManager();
+eventManager.emit(new XEvent());
+
+// The built-in hook lets you listen to events while the component is mounted
+useListener(XEvent, (e) => {
+  // lives as long as the component lives
+});
+```
+
 ## Sessions
 
-`useUISession` is a hook that allows for handling sessions easily. You can and add custom handlers on field change and persist the data to local storage.
+We often need to store values somewhere that we later use it in our application, sometimes those values we want to be persisted in `localStorage` or somewhere so after refresh they can still be accessed.
 
-The interface that defines the store is the following:
-
-```ts
-interface IUISessionStore {
-  lastAuthenticationDate: Date;
-}
-```
+`useUISession()` is a hook that allows for handling sessions easily. You can and add custom handlers on field change and persist the data to local storage.
 
 In order to modify the interface and benefit of autocompletion, you have to extend it:
 
@@ -764,40 +766,51 @@ declare module "@kaviar/x-ui" {
 }
 ```
 
----
-
 The hook provides the following methods:
 
 ```tsx
-get(fieldName);
+import { useUISession, UISessionStateChangeEvent } from "@kaviar/x-ui";
+
+const session = useUISession();
+
 /* returns the value of a field. */
+const csrfToken = session.get("csrfToken");
 
-async set(fieldName, value, options);
 /* sets a field to a value, e.g. set("lastAuthenticationDate", new Date());
-if you want to wait for the handlers to run, you must use await.
+if you want to wait for the event emissions to run, you must use await.
 you will want to use `options` in order to persist data to localStorage. */
+await session.set(fieldName, value, {
+  // optional options
+  persist: true,
+});
 
-onSet(fieldName, handler);
-/* adds a handler that is called on set(fieldName, value);
-the handler is an async function of type IUISessionHandler
-e.g. (event: Event<IUISessionStateChangeEvent>) => Promise<void> */
+session.onSet(fieldName, (e: UISessionStateChangeEvent) => {
+  // You have access to the field logic here:
+  // e.data.fieldName
+  // e.data.previousValue
+  // e.data.value
+});
 
-onSetRemove(handler);
-/* removes a handler that is attached to some field. */
+// Ideally you would store your above function in a handler
+session.onSetRemove(handler);
 ```
 
-Simple example:
+### Example
 
 ```tsx
-import { useUISession, useGuardian, IUISessionHandler } from "@kaviar/x-ui";
+import {
+  useUISession,
+  useGuardian,
+  UISessionEventChangeHandler,
+} from "@kaviar/x-ui";
 
-const authenticationDateHandler: IUISessionHandler = async (event) => {
+// We define the handler: what to do when a field changes?
+const authenticationDateHandler: UISessionEventChangeHandler = (event) => {
   const {
     data: { value, previousValue },
   } = event;
 
-  // do something!
-  console.log({ value, previousValue });
+  console.log("Values have changed: ", { value, previousValue });
 };
 
 function Component() {
@@ -829,11 +842,10 @@ function Component() {
 
 Note:
 
-For handlers, you'll want to declare them outside of a React component,
-such that they won't change their memory address. Otherwise, you won't be able to remove them,
-since onSetRemove identifies a handler by comparing functions, which is done on addresses.
+For handlers, you'll want to declare them outside of a React component, such that they won't change their memory address. Otherwise, you won't be able to remove them,
+since onSetRemove identifies a handler by comparing functions, which is done on the actual reference.
 
----
+### Defaults
 
 When initialising `XUIBundle()`, you can pass session defaults:
 
@@ -850,22 +862,6 @@ When initialising `XUIBundle()`, you can pass session defaults:
       })
     ]
   })
-```
-
-## Events
-
-You can use the classic `EventManager` to emit events, but if you want to have a component listen to events during its lifespan (until it gets unmounted), you can use the hook: `useListener`.
-
-```tsx title="Emitting Events"
-import { useListener, useEventManager } from "@kaviar/x-ui";
-
-const eventManager = useEventManager();
-eventManager.emit(new XEvent());
-
-// The built-in hook lets you listen to events while the component is mounted
-useListener(XEvent, (e) => {
-  // lives as long as the component lives
-});
 ```
 
 ## UI Components

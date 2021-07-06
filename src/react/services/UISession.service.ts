@@ -1,57 +1,60 @@
 import { ContainerInstance, EventManager, Service, Event } from "@kaviar/core";
 import { useEffect, useState } from "react";
-import { IUISessionStateChangeEvent, XUI_CONFIG_TOKEN } from "../..";
+import { UISessionStateChangeEventProps, XUI_CONFIG_TOKEN } from "../..";
 import { UISessionStateChangeEvent } from "../../events";
 import {
   getLocalStorageState,
   updateLocalStorageState,
 } from "./utils/UISession.utils";
 
-export interface IUISessionStore {
-  lastAuthenticationDate: Date;
-}
+export interface IUISessionStore {}
 
 export interface IUISessionOptions {
   persist?: boolean;
 }
 
-export type IUISessionHandler = (
-  event: Event<IUISessionStateChangeEvent>
+export type UISessionEventChangeHandler = (
+  event: Event<UISessionStateChangeEventProps>
 ) => Promise<void>;
-
-interface IUISessionConfig {
-  localStorageKey: string;
-}
-
-export interface IUISessionDefaults
-  extends Partial<IUISessionStore>,
-    IUISessionConfig {}
 
 @Service()
 export class UISession {
+  protected _state: IUISessionStore;
+  protected localStorageKey: string;
+
   constructor(
     protected readonly container: ContainerInstance,
     protected readonly eventManager: EventManager
   ) {
     const { session } = this.container.get(XUI_CONFIG_TOKEN);
 
-    const { localStorageKey, ...defaultSession } = session;
-
+    const { localStorageKey, defaults } = session;
     const localStorageState = getLocalStorageState(localStorageKey);
 
-    this.state = Object.assign(defaultSession, localStorageState);
-
+    this._state = Object.assign({}, defaults, localStorageState);
     this.localStorageKey = localStorageKey;
   }
 
-  state: Partial<IUISessionStore>;
-  private localStorageKey: string;
+  /**
+   * We don't want to expose the state for modification without using .set()
+   */
+  get state(): IUISessionStore {
+    return this._state;
+  }
 
-  public get<T extends keyof IUISessionStore>(fieldName: T) {
-    const [value, setValue] = useState(this.state[fieldName]);
+  public get<T extends keyof IUISessionStore>(
+    fieldName: T,
+    defaultValue?: IUISessionStore[T]
+  ): IUISessionStore[T] {
+    const fieldValue =
+      defaultValue !== undefined && this._state[fieldName] === undefined
+        ? defaultValue
+        : this._state[fieldName];
+
+    const [value, setValue] = useState(fieldValue);
 
     useEffect(() => {
-      const handler = async (e: Event<IUISessionStateChangeEvent>) => {
+      const handler = async (e: Event<UISessionStateChangeEventProps>) => {
         setValue(e.data.value);
       };
 
@@ -72,8 +75,7 @@ export class UISession {
   ) {
     const previousValue = this.state[fieldName];
 
-    this.state = Object.assign(this.state, {
-      ...this.state,
+    this._state = Object.assign({
       [fieldName]: value,
     });
 
@@ -90,16 +92,22 @@ export class UISession {
     );
   }
 
+  /**
+   * Hook an event when the field changes. Be aware that you will have to de-register this event manually, when no longer needed
+   *
+   * @param fieldName
+   * @param handler
+   */
   onSet<T extends keyof IUISessionStore>(
     fieldName: T,
-    handler: IUISessionHandler
+    handler: UISessionEventChangeHandler
   ) {
     this.eventManager.addListener(UISessionStateChangeEvent, handler, {
       filter: (e) => e.data.fieldName === fieldName,
     });
   }
 
-  onSetRemove(handler: IUISessionHandler) {
+  onSetRemove(handler: UISessionEventChangeHandler) {
     this.eventManager.removeListener(UISessionStateChangeEvent, handler);
   }
 }
